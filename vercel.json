@@ -4,12 +4,8 @@
   "trailingSlash": false,
   "rewrites": [
     {
-      "source": "/",
-      "destination": "/web/index.html"
-    },
-    {
       "source": "/(.*)",
-      "destination": "/web/index.html"
+      "destination": "/index.html"
     }
   ]
 }

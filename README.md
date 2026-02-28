@@ -54,10 +54,10 @@ python3 -m http.server 4173
 ### 方案 B：Vercel
 1. 登录 Vercel -> Add New Project -> 导入仓库。
 2. Framework 选 `Other`。
-3. Build command 留空，Output Directory 设为 `web`。
+3. 推荐设置：Build command 留空，Output Directory 设为 `web`。
 4. 部署完成后即可访问。
 
-> 项目已提供 `vercel.json` 路由重写配置。
+> 项目已提供 `vercel.json`（统一回退到 `/index.html`）和根目录 `index.html` 跳转页，兼容「Output Directory=web」或默认根目录部署。
 
 
 ### Vercel 常见 404（`NOT_FOUND`）排查
@@ -70,8 +70,8 @@ python3 -m http.server 4173
 2. **还在访问旧部署链接**
    - 打开 Deployments，使用最新一次 `Ready` 的域名
 
-3. **仓库根目录没有 `index.html`，但路由没重写到 `web/index.html`**
-   - 本项目已在 `vercel.json` 里把所有路径重写到 `/web/index.html`
+3. **路由回退配置不一致（Output Directory 与重写目标不匹配）**
+   - 本项目已统一改为回退到 `/index.html`，并提供根目录 `index.html` 自动跳转到 `/web/index.html`
 
 4. **修改配置后没有触发重新部署**
    - 在 Deployments 里点击 `Redeploy`，或者 push 一次新 commit
