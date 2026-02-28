@@ -29,6 +29,37 @@
 
 ---
 
+
+## 先同步到 GitHub（否则 Vercel 会一直 404）
+
+如果 GitHub 仓库页面只有 `.gitkeep`，说明代码还在本地，Vercel 拉取不到项目文件。
+
+请在你的本地仓库执行：
+
+```bash
+# 1) 确认当前分支和提交
+git branch -vv
+git log --oneline -n 5
+
+# 2) 绑定你的 GitHub 仓库（只需一次）
+git remote add origin https://github.com/<你的账号>/codex-agent.git
+# 如已存在 origin，用下面命令更新
+# git remote set-url origin https://github.com/<你的账号>/codex-agent.git
+
+# 3) 推送当前分支（例如 work）
+git push -u origin work
+
+# 4) 如果 Vercel 绑定的是 main，再把 work 合并到 main 后推送
+git checkout main
+git merge --ff-only work
+git push origin main
+```
+
+然后在 Vercel：
+1. 确认项目连接的是同一个 GitHub 仓库；
+2. 触发 `Redeploy` 或重新导入仓库；
+3. 再访问最新 `Ready` 链接。
+
 ## 本地体验（无需 npm）
 
 ```bash
