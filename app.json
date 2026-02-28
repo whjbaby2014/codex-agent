@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "InvestStart 青少年投资学习",
+    "slug": "teen-invest-learning-app",
+    "version": "1.0.0",
+    "orientation": "default",
+    "platforms": ["android", "ios"],
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.teeninvestlearning"
+    },
+    "android": {
+      "package": "com.example.teeninvestlearning"
+    }
+  }
+}

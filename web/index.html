@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InvestStart 青少年投资学习（Web版）</title>
+    <style>
+      :root {
+        --bg: #f3f6fc;
+        --card: #fff;
+        --line: #d8e1f0;
+        --text: #23365f;
+        --muted: #5d6f8f;
+        --brand: #355ddc;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      .container { max-width: 980px; margin: 0 auto; padding: 16px; }
+      .card {
+        background: var(--card);
+        border-radius: 12px;
+        padding: 14px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      }
+      h1 { margin: 0 0 6px; font-size: 26px; }
+      h2 { margin: 0 0 8px; font-size: 20px; }
+      .subtitle { color: var(--muted); margin: 0 0 12px; }
+      .grid { display: grid; gap: 10px; }
+      input, select, textarea {
+        width: 100%; padding: 10px 12px; border: 1px solid var(--line);
+        border-radius: 8px; background: #fbfdff; font-size: 14px;
+      }
+      button {
+        border: 0; border-radius: 8px; padding: 10px 12px; cursor: pointer;
+        background: var(--brand); color: #fff; font-weight: 700;
+      }
+      .btn-secondary { background: #fff; color: #2d4b85; border: 1px solid #9bb0dd; }
+      .row { display: flex; flex-wrap: wrap; gap: 8px; }
+      .chip { border: 1px solid #9bb0dd; border-radius: 999px; padding: 6px 12px; cursor: pointer; background: #fff; }
+      .chip.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+      .tabbar { display: flex; gap: 4px; background: #e7eeff; border-radius: 10px; padding: 4px; }
+      .tabbar button { flex: 1; background: transparent; color: #2d4b85; }
+      .tabbar button.active { background: var(--brand); color: #fff; }
+      .topic, .question, .record {
+        border: 1px solid #e3eaf8; border-radius: 10px; padding: 10px; margin-bottom: 8px;
+      }
+      .muted { color: var(--muted); }
+      .small { font-size: 13px; }
+      .hidden { display: none; }
+      .split { display: grid; grid-template-columns: 1fr; gap: 12px; }
+      @media (min-width: 900px) { .split { grid-template-columns: 1fr 1fr; } }
+      .ai { white-space: pre-line; line-height: 1.5; color: #42597f; }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <section id="auth" class="card">
+        <h1>InvestStart（Web版）</h1>
+        <p class="subtitle">中学生投资学习网页：学习、考试、计划、记录一体化。</p>
+        <div class="grid">
+          <input id="username" placeholder="账号名（如：xiaoming_8grade）" />
+          <input id="grade" placeholder="年级（如：初二）" />
+          <input id="target" placeholder="学习目标" value="6个月掌握定投和风险控制" />
+          <select id="risk">
+            <option>保守</option>
+            <option selected>平衡</option>
+            <option>进取</option>
+          </select>
+          <button id="loginBtn">登录 / 创建账号</button>
+        </div>
+        <div id="accountList" class="row" style="margin-top: 10px"></div>
+      </section>
+
+      <section id="app" class="hidden">
+        <div class="card">
+          <h2 id="hello"></h2>
+          <p id="goal" class="subtitle"></p>
+          <div class="tabbar">
+            <button data-tab="learn" class="active">学习</button>
+            <button data-tab="exam">考试</button>
+            <button data-tab="plan">计划</button>
+            <button data-tab="log">记录</button>
+          </div>
+        </div>
+
+        <section id="learn" class="card tab-content"></section>
+        <section id="exam" class="card tab-content hidden"></section>
+        <section id="plan" class="card tab-content hidden"></section>
+        <section id="log" class="card tab-content hidden"></section>
+
+        <button id="switchBtn" class="btn-secondary">切换账号</button>
+      </section>
+    </main>
+
+    <script>
+      const topics = [
+        { id: 'risk-return', title: '风险与收益基础', goal: '理解收益与波动关系', keyPoints: ['收益高通常伴随高波动', '本金安全优先', '先评估风险承受力'] },
+        { id: 'asset-allocation', title: '资产配置与分散', goal: '避免单一标的重仓', keyPoints: ['股票/基金/债券用途不同', '分散降低单点风险', '单一标的不超过30%'] },
+        { id: 'compound', title: '复利与定投', goal: '建立长期投资习惯', keyPoints: ['复利依赖时间', '固定频率投入', '坚持复盘'] },
+        { id: 'behavior', title: '投资行为与心理', goal: '识别冲动交易', keyPoints: ['写下买入理由', '避免追涨杀跌', '按计划执行'] },
+        { id: 'compliance', title: '合规与未成年人边界', goal: '理解监护指导与合规', keyPoints: ['先模拟后小额', '不借贷投资', '遵守法规'] }
+      ];
+
+      const questions = [
+        { id: 'q1', q: '收益和风险关系更接近？', options: ['收益高风险低', '收益与风险通常同向', '风险高必亏', '只看运气'], answer: 1, exp: '潜在收益越高，通常伴随更高不确定性。' },
+        { id: 'q2', q: '为什么资产分散？', options: ['增加交易次数', '降低单一标的风险', '追热点', '短线暴利'], answer: 1, exp: '核心是降低组合波动。' },
+        { id: 'q3', q: '复利最依赖？', options: ['频繁换仓', '时间和持续投入', '追热门', '一次重仓'], answer: 1, exp: '复利关键在长期与纪律。' }
+      ];
+
+      const riskPlans = {
+        保守: ['每月预算 300 元以内', '80%用于低波动标的模拟', '每月与家长复盘一次'],
+        平衡: ['每月预算 500 元以内', '60%宽基指数 + 40%稳健资产', '每两周复盘再平衡一次'],
+        进取: ['每月预算 800 元以内', '先模拟仓位后小额实操', '单一标的不超过总预算30%']
+      };
+
+      const state = {
+        accounts: JSON.parse(localStorage.getItem('investstart-accounts') || '[]'),
+        active: ''
+      };
+
+      const el = (id) => document.getElementById(id);
+      const save = () => localStorage.setItem('investstart-accounts', JSON.stringify(state.accounts));
+      const activeAccount = () => state.accounts.find(a => a.username === state.active);
+
+      function buildAdvice(a) {
+        if (!a) return '请先登录账号。';
+        const totalInput = a.records.reduce((s, r) => s + Number(r.amount || 0), 0);
+        const totalResult = a.records.reduce((s, r) => s + Number(r.result || 0), 0);
+        const avg = a.scores.length ? (a.scores.reduce((s, x) => s + x, 0) / a.scores.length).toFixed(1) : '暂无';
+        return [
+          `累计记录 ${a.records.length} 次，投入约 ¥${totalInput.toFixed(2)}，阶段盈亏 ¥${totalResult.toFixed(2)}。`,
+          `已完成学习模块 ${a.completed.length}/${topics.length}。`,
+          `测验平均分：${avg}。`,
+          `风险偏好：${a.risk}，本周建议：${riskPlans[a.risk][0]}。`,
+          '行动建议：坚持“记录-复盘-微调”，每两周更新一次目标。'
+        ].join('\n');
+      }
+
+      function renderAccounts() {
+        const box = el('accountList');
+        box.innerHTML = '';
+        state.accounts.forEach(a => {
+          const b = document.createElement('button');
+          b.className = 'chip';
+          b.textContent = a.username;
+          b.onclick = () => { state.active = a.username; render(); };
+          box.appendChild(b);
+        });
+      }
+
+      function renderLearn(a) {
+        const c = el('learn');
+        c.innerHTML = `<h2>1) 学习知识地图</h2>` + topics.map(t => `
+          <div class="topic">
+            <div><strong>${a.selected.includes(t.id) ? '✅' : '⬜️'} ${t.title}</strong></div>
+            <div class="muted small">目标：${t.goal}</div>
+            <div class="muted small">重点：${t.keyPoints.join('；')}</div>
+            <div class="row" style="margin-top:8px">
+              <button data-act="toggle-topic" data-id="${t.id}">${a.selected.includes(t.id) ? '取消选择' : '加入学习'}</button>
+              <button class="btn-secondary" data-act="finish-topic" data-id="${t.id}">${a.completed.includes(t.id) ? '已完成' : '标记完成'}</button>
+            </div>
+          </div>`).join('');
+      }
+
+      function renderExam(a) {
+        const c = el('exam');
+        c.innerHTML = `<h2>2) 模块考试</h2>` + questions.map(q => `
+          <div class="question">
+            <div><strong>${q.q}</strong></div>
+            <div class="row" style="margin-top:8px">
+              ${q.options.map((o, i) => `<button class="btn-secondary" data-act="answer" data-q="${q.id}" data-i="${i}">${o}</button>`).join('')}
+            </div>
+            <div class="small muted" style="margin-top:8px">解析：${q.exp}</div>
+          </div>`).join('') + `
+          <button id="submitExam">提交测验</button>
+          <p class="muted">历史成绩：${a.scores.length ? a.scores.join(' / ') : '暂无'}</p>`;
+      }
+
+      function renderPlan(a) {
+        el('plan').innerHTML = `<h2>3) 实操建议计划</h2>
+          <p class="muted">风险偏好：${a.risk}</p>
+          ${riskPlans[a.risk].map((p, i) => `<p>${i + 1}. ${p}</p>`).join('')}
+          <p class="muted">执行节奏：每周记录，双周复盘，月度总结。</p>`;
+      }
+
+      function renderLog(a) {
+        el('log').innerHTML = `
+          <h2>4) 投资行为/结果记录</h2>
+          <div class="split">
+            <div>
+              <div class="grid">
+                <input id="d" placeholder="日期（2026-03-01）" />
+                <input id="amt" placeholder="投入金额" />
+                <input id="asset" placeholder="投资标的" />
+                <input id="res" placeholder="本期结果（盈亏）" />
+                <input id="freq" placeholder="定投频率（每周/每月）" value="每周" />
+                <textarea id="note" placeholder="行为备注（买入原因、是否按计划执行）"></textarea>
+                <button id="addRecord">保存记录</button>
+              </div>
+            </div>
+            <div>
+              <h3>AI 总结与建议</h3>
+              <p class="ai">${buildAdvice(a)}</p>
+            </div>
+          </div>
+          <div>${a.records.map(r => `<div class="record"><div>${r.date} | ¥${r.amount} | ${r.asset}</div><div class="small muted">频率：${r.freq} | 结果：${r.result || '未填'}</div><div class="small muted">备注：${r.note || '无'}</div></div>`).join('')}</div>`;
+      }
+
+      function render() {
+        renderAccounts();
+        const a = activeAccount();
+        const showApp = Boolean(a);
+        el('auth').classList.toggle('hidden', showApp);
+        el('app').classList.toggle('hidden', !showApp);
+        if (!a) return;
+
+        el('hello').textContent = `你好，${a.username}`;
+        el('goal').textContent = `目标：${a.target || '建立投资学习体系'}`;
+
+        renderLearn(a); renderExam(a); renderPlan(a); renderLog(a);
+      }
+
+      el('loginBtn').onclick = () => {
+        const username = el('username').value.trim();
+        if (!username) return;
+        const grade = el('grade').value.trim();
+        const target = el('target').value.trim();
+        const risk = el('risk').value;
+
+        let a = state.accounts.find(x => x.username === username);
+        if (!a) {
+          a = { username, grade, target, risk, selected: topics.slice(0,2).map(t => t.id), completed: [], scores: [], records: [], answers: {} };
+          state.accounts.push(a);
+          save();
+        }
+        state.active = username;
+        render();
+      };
+
+      document.body.addEventListener('click', (e) => {
+        const t = e.target;
+        if (!(t instanceof HTMLElement)) return;
+
+        if (t.matches('[data-tab]')) {
+          const tab = t.dataset.tab;
+          document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('active', b === t));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+          el(tab).classList.remove('hidden');
+        }
+
+        const a = activeAccount();
+        if (!a) return;
+
+        if (t.dataset.act === 'toggle-topic') {
+          const id = t.dataset.id;
+          a.selected = a.selected.includes(id) ? a.selected.filter(x => x !== id) : [...a.selected, id];
+          save(); render();
+        }
+        if (t.dataset.act === 'finish-topic') {
+          const id = t.dataset.id;
+          if (!a.completed.includes(id)) a.completed.push(id);
+          save(); render();
+        }
+        if (t.dataset.act === 'answer') {
+          const q = t.dataset.q;
+          const i = Number(t.dataset.i);
+          a.answers[q] = i;
+          save();
+        }
+      });
+
+      document.body.addEventListener('click', (e) => {
+        const t = e.target;
+        if (!(t instanceof HTMLElement)) return;
+        const a = activeAccount();
+        if (!a) return;
+
+        if (t.id === 'submitExam') {
+          const score = questions.reduce((s, q) => s + (a.answers[q.id] === q.answer ? Math.floor(100/questions.length) : 0), 0);
+          a.scores.unshift(score);
+          a.answers = {};
+          save(); render();
+        }
+
+        if (t.id === 'addRecord') {
+          const d = el('d').value.trim();
+          const amount = el('amt').value.trim();
+          const asset = el('asset').value.trim();
+          const result = el('res').value.trim();
+          const freq = el('freq').value.trim();
+          const note = el('note').value.trim();
+          if (!d || !amount || !asset) return;
+          a.records.unshift({ id: Date.now() + '-' + Math.random().toString(16).slice(2,7), date: d, amount, asset, result, freq, note });
+          save(); render();
+        }
+      });
+
+      el('switchBtn').onclick = () => { state.active = ''; render(); };
+      render();
+    </script>
+  </body>
+</html>
